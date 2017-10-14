@@ -1,5 +1,6 @@
 // ------------------------------------------
 // Controlling Home Thermostat over the Internet
+// v0.0.1
 // ------------------------------------------
 
 // TODO - akaustav: Find if code is being used
