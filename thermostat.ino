@@ -11,17 +11,17 @@ int temperature_plus = D2;
 int temperature_minus = D6;
 
 // Declare global variables for setting temperature
-int insideTemp = 76; // Inside temperature is assumed as 76° Fahrenheit
-int setToTemp = 76;  // Default set to temperature is 76° Fahrenheit
-int correction = 0;  // Positive difference between insideTemp and setToTemp
+int oldSetToTemp = 76;  // Previous set to temperature value is assumed as 76° Fahrenheit
+int newSetToTemp = 76;  // Default set to temperature value is 76° Fahrenheit
+int correction = 0;  // Positive difference between oldSetToTemp and newSetToTemp
 
-char setTime[6] = "HH:MM";
+// char setTime[6] = "HH:MM";
 
 
 // Function for initial setup of the device
 void setup() {
   // Set Time Zone = Arizona Time
-  Time.zone(-7);
+  // Time.zone(-7);
 
   // Set pin configurations to INPUT
   // INPUT consumes less power than OUTPUT
@@ -34,13 +34,13 @@ void setup() {
 
   // Register Particle.variables to access variables from the cloud
   // This variable is used for tracking current temperture inside the house
-  Particle.variable("Inside", insideTemp);
+  Particle.variable("OldSetTo", oldSetToTemp);
 
   // This variable is used for tracking current set to temperture
-  Particle.variable("SetTo", setToTemp);
+  Particle.variable("NewSetTo", newSetToTemp);
 
   // This variable is used to read the timestamp
-  Particle.variable("Time", setTime);
+  // Particle.variable("Time", setTime);
 }
 
 
@@ -91,27 +91,27 @@ void loop() {}
 // This is the set_temperature_app() function we registered to the "SetTempTo" Particle.function earlier.
 // Particle.functions always take a string as an argument and return an integer.
 int set_temperature_app(String command) {
-  setToTemp = command.toInt();
+  newSetToTemp = command.toInt();
 
-  sprintf(setTime, "%02d:%02d", Time.hour(), Time.minute());
+  // sprintf(setTime, "%02d:%02d", Time.hour(), Time.minute());
 
-  if (setToTemp > insideTemp) {
-    correction = setToTemp - insideTemp + 1;
+  if (newSetToTemp > oldSetToTemp) {
+    correction = newSetToTemp - oldSetToTemp + 1;
 
     for (int i = 0; i < correction; i++) {
       increase();
     }
 
-    insideTemp = setToTemp;
+    oldSetToTemp = newSetToTemp;
     return correction - 1;
-  } else if (setToTemp < insideTemp) {
-    correction = insideTemp - setToTemp + 1;
+  } else if (newSetToTemp < oldSetToTemp) {
+    correction = oldSetToTemp - newSetToTemp + 1;
 
     for (int i = 0; i < correction; i++) {
       decrease();
     }
 
-    insideTemp = setToTemp;
+    oldSetToTemp = newSetToTemp;
     return 1 - correction;
   } else {
     return 0;
