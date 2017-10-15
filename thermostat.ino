@@ -1,11 +1,8 @@
 // ------------------------------------------
 // Controlling Home Thermostat over the Internet
-// v0.0.1
+// v0.0.2
 // ------------------------------------------
 
-// TODO - akaustav: Find if code is being used
-#define in true
-#define out false
 
 // Declare aliases for pins
 //   temperature_plus is on pin D2
@@ -14,18 +11,16 @@ int temperature_plus = D2;
 int temperature_minus = D6;
 
 // Declare global variables for setting temperature
-int tempValue = 76; // Default set temperature is 76° Fahrenheit
-int curTemp = 76;   // Current temperature is assumed as 76° Fahrenheit
-int correction = 0; // Positive difference between curTemp and tempValue
+int insideTemp = 76; // Inside temperature is assumed as 76° Fahrenheit
+int setToTemp = 76;  // Default set to temperature is 76° Fahrenheit
+int correction = 0;  // Positive difference between insideTemp and setToTemp
 
-// TODO -akaustav: Check if array size should be set to 5 instead of 6
 char setTime[6] = "HH:MM";
 
 
 // Function for initial setup of the device
 void setup() {
   // Set Time Zone = Arizona Time
-  // TODO - akaustav: Find if code is being used
   Time.zone(-7);
 
   // Set pin configurations to INPUT
@@ -34,12 +29,15 @@ void setup() {
   pinMode(temperature_minus, INPUT);
 
   // Register Particle.functions
-  // When we ask the cloud for the function "changeTemp", it will employ the function change_temperature_app() from this app.
-  Particle.function("ChangeTemp", temperature_change_app);
+  // When we ask the cloud for the function "SetTempTo", it will employ the function set_temperature_app() from this app.
+  Particle.function("SetTempTo", set_temperature_app);
 
   // Register Particle.variables to access variables from the cloud
-  // This variable is used for sending temperture to be set at
-  Particle.variable("currentTemp", curTemp);
+  // This variable is used for tracking current temperture inside the house
+  Particle.variable("Inside", insideTemp);
+
+  // This variable is used for tracking current set to temperture
+  Particle.variable("SetTo", setToTemp);
 
   // This variable is used to read the timestamp
   Particle.variable("Time", setTime);
@@ -90,31 +88,30 @@ void decrease() {
 void loop() {}
 
 
-// This is the temperature_change_app() function we registered to the "ChangeTemp" Particle.function earlier.
+// This is the set_temperature_app() function we registered to the "SetTempTo" Particle.function earlier.
 // Particle.functions always take a string as an argument and return an integer.
-int temperature_change_app(String command) {
-  tempValue = command.toInt();
+int set_temperature_app(String command) {
+  setToTemp = command.toInt();
 
-  // TODO - akaustav: Find if code is being used
   sprintf(setTime, "%02d:%02d", Time.hour(), Time.minute());
 
-  if (tempValue > curTemp) {
-    correction = tempValue - curTemp + 1;
+  if (setToTemp > insideTemp) {
+    correction = setToTemp - insideTemp + 1;
 
     for (int i = 0; i < correction; i++) {
       increase();
     }
 
-    curTemp = tempValue;
+    insideTemp = setToTemp;
     return correction - 1;
-  } else if (tempValue < curTemp) {
-    correction = curTemp - tempValue + 1;
+  } else if (setToTemp < insideTemp) {
+    correction = insideTemp - setToTemp + 1;
 
     for (int i = 0; i < correction; i++) {
       decrease();
     }
 
-    curTemp = tempValue;
+    insideTemp = setToTemp;
     return 1 - correction;
   } else {
     return 0;
