@@ -4,8 +4,7 @@
 // ------------------------------------------
 
 #define BUTTON_PRESSED_TIMEOUT 7000 // 7 seconds
-#define DEBOUNCE_DELAY_PLUS  500000 // 500 milliseconds
-#define DEBOUNCE_DELAY_MINUS 500000 // 500 milliseconds
+#define DEBOUNCE_DELAY 200 // 200 milliseconds
 
 // Declare aliases for pins
 //   temperature_plus is on pin D2
@@ -53,7 +52,6 @@ void setup() {
   // This variable is used for tracking current set to temperture
   Particle.variable("NewSetTo", newSetToTemp);
 
-  Particle.variable("Counter", counter);
   Particle.variable("changeWindow", changeWindow);
 
   // This variable is used to read the timestamp
@@ -66,38 +64,40 @@ void setup() {
 
 // Callback function for plus button pressed interrupt
 void plus_button_pressed() {
-  // noInterrupts();
-  buttonPressedTimer.reset();
-  ATOMIC_BLOCK() {
-    delayMicroseconds(DEBOUNCE_DELAY_PLUS); // Wait for DEBOUNCE_DELAY
-  }
-  counter++;
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
 
-  if (changeWindow == 0) {
-    changeWindow = 1;
-  } else if (changeWindow == 1) {
-    oldSetToTemp++;
+  if (interruptTime - lastInterruptTime > DEBOUNCE_DELAY) {
+    buttonPressedTimer.reset();
+    counter++;
+
+    if (changeWindow == 0) {
+      changeWindow = 1;
+    } else if (changeWindow == 1) {
+      oldSetToTemp++;
+    }
   }
 
-  // interrupts();
+  lastInterruptTime = interruptTime;
 }
 
-// Callback function for plus button pressed interrupt
+// Callback function for minus button pressed interrupt
 void minus_button_pressed() {
-  // noInterrupts();
-  buttonPressedTimer.reset();
-  ATOMIC_BLOCK() {
-    delayMicroseconds(DEBOUNCE_DELAY_MINUS); // Wait for DEBOUNCE_DELAY
-  }
-  counter--;
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
 
-  if (changeWindow == 0) {
-    changeWindow = 1;
-  } else if (changeWindow == 1) {
-    oldSetToTemp--;
+  if (interruptTime - lastInterruptTime > DEBOUNCE_DELAY) {
+    buttonPressedTimer.reset();
+    counter--;
+
+    if (changeWindow == 0) {
+      changeWindow = 1;
+    } else if (changeWindow == 1) {
+      oldSetToTemp--;
+    }
   }
 
-  // interrupts();
+  lastInterruptTime = interruptTime;
 }
 
 // Timer reset callback
